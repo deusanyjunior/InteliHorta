@@ -1,6 +1,15 @@
+//#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <dht.h>
+#include "keys.h"
+
+// WiFi
+WiFiClient client;
+
+// ThingSpeak
+const char* server = "api.thingspeak.com";
 
 // Data wire is plugged into pin 2 on the Arduino
 #define ONE_WIRE_BUS D4
@@ -12,44 +21,134 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
-
+// DHT22 settings
 dht DHT;
 #define DHT22_PIN D3
 
 void setup(void)
 {
-  // start serial port
+  // Start serial port
   Serial.begin(9600);
-  pinMode(D4, INPUT);
-
-  // Start up the library
-  sensors.begin();
-  delay(1000);
   
-  // Print Devices
-  printDevicesInfo();
+  // Start WiFi
+  wifiConnection();
+  
+  // Start up sensors' library
+  sensors.begin();
 
-  Serial.println("dht22");
-  Serial.print("LIBRARY VERSION: ");
-  Serial.println(DHT_LIB_VERSION);
-  Serial.println();
-  Serial.println("Type,\tstatus,\tHumidity (%),\tTemperature (C)\tTime (us)");
+  // Setup DS18B20  
+  pinMode(ONE_WIRE_BUS, INPUT);
+  
+  // Setup DHT22
+  pinMode(DHT22_PIN, INPUT);
+  
+  delay(1000);
 }
- 
+
 void loop(void)
 {
-  Serial.println("Requesting DS18b20 temperatures..");
+  // Verify connection
+  while (WiFi.status() != WL_CONNECTED) {
+    wifiConnection();
+    delay(500);
+    Serial.println(".");
+  }
+
+  // Get Data
+
+  // DS18B20
+  requestDS18B20Data();
+  float d1 = sensors.getTempCByIndex(0);
+  float d2 = sensors.getTempCByIndex(1);
+
+  // DHT22
+  requestDHT22Data();
+  float dht22T = DHT.temperature;
+  float dht22H = DHT.humidity;
+
+  // Send Data
+  if (client.connect(server,80)) {
+    String postStr = apiKey;
+           postStr +="&amp;field1=";
+           postStr += String(d1);
+           postStr +="&amp;field2=";
+           postStr += String(d2);
+           postStr +="&amp;field3=";
+           postStr += String(dht22T);
+           postStr +="&amp;field4=";
+           postStr += String(dht22H);
+           postStr += "\r\n\r\n";
+ 
+     client.print("POST /update HTTP/1.1\n");
+     client.print("Host: api.thingspeak.com\n");
+     client.print("Connection: close\n");
+     client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+     client.print("Content-Type: application/x-www-form-urlencoded\n");
+     client.print("Content-Length: ");
+     client.print(postStr.length());
+     client.print("\n\n");
+     client.print(postStr);
+
+     Serial.print("Post message: ");
+     Serial.println(postStr);
+  }
+  client.stop();  
+  
+  delay(30000);
+}
+
+// Request temperature for every DS18B20 device available
+void requestDS18B20Data()
+{
   sensors.requestTemperatures();
   
-  printTemperatures();
+  // print data
+  int numDev = sensors.getDeviceCount();
+  for (int i = 0; i < numDev; i++) {
+    Serial.print("Device ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(sensors.getTempCByIndex(i)); 
+  }
+}
 
-  // READ DATA
-  Serial.print("DHT22, \t");
+// Print device id and address for every DS18B20 device available
+void printDevicesInfo()
+{
+  int numDev = sensors.getDeviceCount();
+  DeviceAddress DS18B20[numDev];
+  Serial.println("DS18B20 devices available:");
+  for (int i = 0; i < numDev; i++) {
+    sensors.getAddress(DS18B20[i], i);
+    Serial.print("Dev ");
+    Serial.print(i);
+    Serial.print(" id: ");
+    printAddress(DS18B20[i]);
+    delay(500);
+  }
+}
 
+// Function to print a device address for every DS18B20
+void printAddress(DeviceAddress deviceAddress)
+{
+ for (uint8_t i = 0; i < 8; i++)
+ {
+   // zero pad the address if necessary
+   if (deviceAddress[i] < 16) Serial.print("0");
+   Serial.print(deviceAddress[i], HEX);
+   if (i != 7) Serial.print(":");
+ }
+ Serial.println();
+}
+
+// Function to request DHT22 status and values
+void requestDHT22Data() {
   uint32_t start = micros();
   int chk = DHT.read22(DHT22_PIN);
   uint32_t stop = micros();
 
+  Serial.print("DHT22,\t");
+  
 //  stat.total++;
   switch (chk)
   {
@@ -77,50 +176,20 @@ void loop(void)
   Serial.print(",\t");
   Serial.print(stop - start);
   Serial.println();
-  
-  delay(1000);
 }
 
-// Print temperature for every DS18B20 device available
-void printTemperatures()
-{
-  int numDev = sensors.getDeviceCount();
-
-  for (int i = 0; i < numDev; i++) {
-    Serial.print("Device ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.println(sensors.getTempCByIndex(i)); 
-  }
-}
-
-// Print device id and address for every DS18B20 device available
-void printDevicesInfo()
-{
-  int numDev = sensors.getDeviceCount();
-  DeviceAddress DS18B20[numDev];
-  Serial.println("DS18B20 devices available:");
-  for (int i = 0; i < numDev; i++) {
-    sensors.getAddress(DS18B20[i], i);
-    Serial.print("Dev ");
-    Serial.print(i);
-    Serial.print(" id: ");
-    printAddress(DS18B20[i]);
+// Method to (re)connect to WiFi network
+void wifiConnection() {
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
   }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
-
-// Function to print a device address
-void printAddress(DeviceAddress deviceAddress)
-{
- for (uint8_t i = 0; i < 8; i++)
- {
-   // zero pad the address if necessary
-   if (deviceAddress[i] < 16) Serial.print("0");
-   Serial.print(deviceAddress[i], HEX);
-   if (i != 7) Serial.print(":");
- }
- Serial.println();
-}
-
-
