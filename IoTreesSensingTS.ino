@@ -23,7 +23,7 @@ DallasTemperature sensors(&oneWire);
 
 // DHT22 settings
 dht DHT;
-#define DHT22_PIN D3
+#define DHT22_PIN D8
 
 void setup(void)
 {
@@ -56,27 +56,30 @@ void loop(void)
 
   // Get Data
 
-  // DS18B20
-  requestDS18B20Data();
-  float d1 = sensors.getTempCByIndex(0);
-  float d2 = sensors.getTempCByIndex(1);
-
   // DHT22
   requestDHT22Data();
   float dht22T = DHT.temperature;
   float dht22H = DHT.humidity;
+  
+  // DS18B20
+  requestDS18B20Data();
+  float ds18b20T = sensors.getTempCByIndex(0);
+
+  // Soil Moisture
+  float soilMoisture = analogRead(sensor_pin);
+  float smMapped = map(soilMoisture,550,0,0,100);
 
   // Send Data
   if (client.connect(server,80)) {
     String postStr = apiKey;
            postStr +="&amp;field1=";
-           postStr += String(d1);
-           postStr +="&amp;field2=";
-           postStr += String(d2);
-           postStr +="&amp;field3=";
            postStr += String(dht22T);
-           postStr +="&amp;field4=";
+           postStr +="&amp;field2=";
            postStr += String(dht22H);
+           postStr +="&amp;field3=";
+           postStr += String(ds18b20T);
+           postStr +="&amp;field4=";
+           postStr += String(smMapped);
            postStr += "\r\n\r\n";
  
      client.print("POST /update HTTP/1.1\n");
