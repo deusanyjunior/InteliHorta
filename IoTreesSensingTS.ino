@@ -23,7 +23,10 @@ DallasTemperature sensors(&oneWire);
 
 // DHT22 settings
 dht DHT;
-#define DHT22_PIN D8
+#define DHT22_PIN D5
+
+// SOIL MOISTURE
+#define SM_PIN A0
 
 void setup(void)
 {
@@ -66,8 +69,8 @@ void loop(void)
   float ds18b20T = sensors.getTempCByIndex(0);
 
   // Soil Moisture
-  float soilMoisture = analogRead(sensor_pin);
-  float smMapped = map(soilMoisture,550,0,0,100);
+  float soilMoisture = analogRead(SM_PIN);
+  float smMapped = map(soilMoisture,750,250,0,100);
 
   // Send Data
   if (client.connect(server,80)) {
