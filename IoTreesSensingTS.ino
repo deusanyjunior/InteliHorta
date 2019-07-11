@@ -1,8 +1,8 @@
-#include "ThingSpeak.h"
 #include <ESP8266WiFi.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <dht.h> // https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTstable
+#include "ThingSpeak.h" // v 1.5.0
+#include <OneWire.h> // v 2.3.4
+#include <DallasTemperature.h> // v 3.8.0
+#include <dht.h> // v 0.2.3 DHTstable by RobTillaart
 #include "keys.h"
 
 // WiFi
