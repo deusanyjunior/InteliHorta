@@ -58,7 +58,7 @@ void loop(void)
   
   // Umidade do Solo
   float soilMoisture = analogRead(SM_PIN);
-  float smMapped = map(soilMoisture,750,250,0,100); // Mapeia os valores para uma faixa entre 0 e 100%
+  float smMapped = map(soilMoisture,0,40,0,100); // Mapeia os valores para uma faixa entre 0 e 100%
   Serial.print("Umidade do solo:\t");
   Serial.print(soilMoisture, 1);
   Serial.print("\t");
