@@ -1,6 +1,8 @@
-//----------------  Fill in your credentails   ---------------------
-char ssid[] = "ssid";             // your network SSID (name) 
-char pass[] = "password";         // your network password
-unsigned long myChannelNumber = 000000;  // Replace the 0 with your channel number
-const char * myWriteAPIKey = "0000000000000000";    // Paste your ThingSpeak Write API Key between the quotes 
+//----------------  Chaves para conexão   ---------------------
+char ssid[] = "ssid";             // SSID (nome da rede WiFi) 
+char pass[] = "senha";         // Senha (da rede WiFi)
+uint8_t MAC[6] = {0xc8,0x2a,0x14,0x4e,0xc4,0x86}; // Endereço de MAC para a placa de rede
+
+unsigned long myChannelNumber = 0000000;  // Troque pelo ID do seu canal
+const char * myWriteAPIKey = "AABBCCDDEEFFGGHH";    // Coloque entre aspas a Write API Key do ThingSpeak
 //------------------------------------------------------------------
