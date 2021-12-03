@@ -29,7 +29,7 @@ int tempoDeRegarMin = 10000; // Tempo máximo para regar em milissegundos
 int tempoDeRegarMax = 20000; // Tempo máximo para regar em milissegundos
 
 // Tempo sem coletar dados (em minutos)
-int minutosDeDescanso = 1; 
+int minutosDeDescanso = 0.1; 
 
 void setup(void)
 {
@@ -60,6 +60,8 @@ void loop(void)
   float soilMoisture = analogRead(SM_PIN);
   float smMapped = map(soilMoisture,750,250,0,100); // Mapeia os valores para uma faixa entre 0 e 100%
   Serial.print("Umidade do solo:\t");
+  Serial.print(soilMoisture, 1);
+  Serial.print("\t");
   Serial.print(smMapped, 1);
   Serial.println("%");
   
@@ -86,8 +88,8 @@ void loop(void)
     }
   
   // Define os valores dos campos a serem enviados para a Nuvem
-  ThingSpeak.setField(1, smMapped);
-  ThingSpeak.setField(2, coloqueiAgua);
+  ThingSpeak.setField(1, coloqueiAgua);
+  ThingSpeak.setField(2, smMapped);
 
   // Envia os dados para o ThingSpeak
   int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey); // Envia dados e retorna informação sobre o envio
